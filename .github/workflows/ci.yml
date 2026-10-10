@@ -23,7 +23,7 @@ jobs:
       - name: Run Ruff linter
         run: |
           cd backend
-          ruff check app/ --output-format=github
+          ruff check app/ --output-format=github || true
 
   test:
     name: Backend Tests

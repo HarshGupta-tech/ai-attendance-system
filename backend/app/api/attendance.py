@@ -1,14 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy.orm import Session
-from typing import Any, Optional
+from typing import Any
 
-from app.core.dependencies import get_db, get_current_user, require_role
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from sqlalchemy.orm import Session
+
+from app.core.dependencies import get_current_user, get_db, require_role
+from app.models import Student
+from app.models.attendance import AttendanceRecord, AttendanceSession
+from app.models.user import User
+from app.schemas import attendance as attendance_schemas
 from app.services.attendance_service import AttendanceService
 from app.services.face_service import FaceService
-from app.schemas import attendance as attendance_schemas
-from app.models.user import User
-from app.models.attendance import AttendanceSession, AttendanceRecord
-from app.models import Student
 
 router = APIRouter()
 
@@ -42,7 +50,7 @@ def session_to_dict(s):
         'status': s.status, 'session_code': getattr(s, 'session_code', None),
         'created_by': s.created_by,
         'created_at': str(s.created_at) if s.created_at else None,
-        'updated_at': str(getattr(s, 'updated_at')) if getattr(s, 'updated_at', None) else None
+        'updated_at': str(s.updated_at) if getattr(s, 'updated_at', None) else None
     }
 
 def record_to_dict(r):
@@ -71,9 +79,9 @@ def create_session(
 def list_sessions(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    subject_id: Optional[int] = None,
-    date: Optional[str] = None,
-    status: Optional[str] = None,
+    subject_id: int | None = None,
+    date: str | None = None,
+    status: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
@@ -271,6 +279,5 @@ async def websocket_endpoint(websocket: WebSocket, session_id: int):
     try:
         while True:
             data = await websocket.receive_text()
-            pass
     except WebSocketDisconnect:
         manager.disconnect(websocket, session_id)
